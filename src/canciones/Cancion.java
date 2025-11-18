@@ -98,7 +98,13 @@ public class Cancion {
 	
 	public void asignarArtista(Rol rol, Set<Artista> artistas) {
 		
-		if(artistas == null || artistas.isEmpty()) return;
+		if(rol == null) {
+			throw new IllegalArgumentException("El rol no puede ser null.");
+		}
+		
+		if(artistas == null || artistas.isEmpty()) {
+			throw new IllegalArgumentException("Los artistas no pueden ser null ni estar vacios.");
+		}
 		
 					
 		validarAsignacionRolArtistas(rol, artistas);	
@@ -125,7 +131,10 @@ public class Cancion {
 	}
 	
 	public double obtenerCosto(ArrayList<Artista> artistasBase) {
-		if(!this.puedeTocarse()) return -1;
+		if(!this.puedeTocarse()) {
+			throw new IllegalStateException("No es posible calcular el costo: la canción no tiene todas las asignaciones completas.");
+		}
+		
 		double precio = 0;
 		
 		for(Map.Entry<Rol, Set<Artista>> aAsignados : this.artistasAsignados.entrySet()) {

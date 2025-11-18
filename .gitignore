@@ -1,0 +1,22 @@
+# Out folders
+/bin/
+/target/
+out/
+
+# Eclipse files
+.classpath
+.project
+.settings/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Java
+*.class
+*.log
+
+# IDE variado
+.idea/
+*.iml
+.vscode/

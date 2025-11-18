@@ -15,6 +15,9 @@ public class Recital {
 	private String titulo;
 	private String banda;
 	private Set<Cancion> listaCanciones = new HashSet<>();
+	private Map<ArtistaContratado, Integer> contadorCanciones = new HashMap<>();
+	private Set<Artista> artistasBaseContratados = new HashSet<>();
+	private HashMap<Cancion, HashMap<Rol, Set<Artista>>> asignacionesRecital = new HashMap<>();
 	
 	public Recital(String titulo, String banda) {
 		this.titulo = titulo;
@@ -51,133 +54,113 @@ public class Recital {
 		return artistasRecital;
 	}
 	
+	public void contratarPorCancion(
+			Cancion cancion,
+			Set<Artista> artistasBase,
+			Set<ArtistaContratado> artistasContratados) {
+		if(!this.listaCanciones.contains(cancion)) {
+			return;
+		}
+		
+		HashMap<Rol, Set<Artista>> asignacion = new HashMap<>();
+		Set<Rol> rolesRequeridos = cancion.rolesFaltantes().keySet();
+		for(Rol rol : rolesRequeridos) {			
+			Set<Artista> asignadosPorRol = asingarArtistasPorRol(rol, artistasBase, artistasContratados, asignacion, cancion);
+			if(asignadosPorRol != null && !asignadosPorRol.isEmpty()) {
+				asignacion.put(rol, asignadosPorRol);
+				for(Artista a : asignadosPorRol) {
+					if(artistasContratados.contains(a)) {
+						ArtistaContratado ac = (ArtistaContratado) a;
+						this.contadorCanciones.merge(ac, 1, Integer::sum);
+					}
+				}
+				
+			}
+			cancion.asignarArtista(rol, asignadosPorRol);
+		}
+		
+	    HashMap<Rol, Set<Artista>> asignacionesCancion =
+	            asignacionesRecital.getOrDefault(cancion, new HashMap<>());
+	    
+	    asignacionesCancion.putAll(asignacion);
+
+	    asignacionesRecital.put(cancion, asignacionesCancion);
+	    
+	}
 	
-	public void contratarArtistas(ArrayList<Artista> artistasBase, ArrayList<ArtistaContratado> artistasContratados) {
-		// Obtener artistas con roles coincidentes
-		HashMap<Cancion, HashMap<Rol, Set<Artista>>> candidatosBase = new HashMap<>();
-		HashMap<Cancion, HashMap<Rol, Set<ArtistaContratado>>> candidatosContratados = new HashMap<>();
+	public void contratarTodasCanciones(
+			Set<Artista> artistasBase,
+			Set<ArtistaContratado> artistasContratados
+		) {
+		for(Cancion cancion : this.listaCanciones) {
+			boolean cancionConAsignaciones = 
+					this.asignacionesRecital.containsKey(cancion) &&
+					this.asignacionesRecital.get(cancion) != null &&
+					!this.asignacionesRecital.get(cancion).isEmpty();
 			
-		if(
-				(artistasBase == null || artistasBase.isEmpty()) 
-				&&
-				(artistasContratados == null || artistasContratados.isEmpty())
-			) return;
-		
-		// Candidatos por rol;
-		generarCandidatosPorRol(artistasBase, candidatosBase);
-		generarCandidatosPorRol(artistasContratados, candidatosContratados);
-		
-		Set<Artista> artistasBaseCandidatos = new HashSet<>();
-		for(Map.Entry<Cancion, HashMap<Rol, Set<Artista>>> entradasCandidatosBase : candidatosBase.entrySet()) {
-			HashMap<Rol, Set<Artista>> mapaArtistaRol = entradasCandidatosBase.getValue();
-			for(Map.Entry<Rol, Set<Artista>> entradasArtistaRol : mapaArtistaRol.entrySet()) {
-				Set<Artista> artistasRol = entradasArtistaRol.getValue(); 
-				for(Artista r : artistasRol) {
-					artistasBaseCandidatos.add(r);					
-				}
+			if(!cancionConAsignaciones) {
+				contratarPorCancion(cancion, artistasBase, artistasContratados);
 			}
-		}
-		
-		HashMap<Cancion, HashMap<Rol, Set<ArtistaContratado>>> candsContratadosRolEntrenado = new HashMap<>();
-		HashMap<Cancion, HashMap<Rol, Set<ArtistaContratado>>> candsContratadosRolNoEntrenado = new HashMap<>();
-		
-		for(Map.Entry<Cancion, HashMap<Rol, Set<ArtistaContratado>>> entradasCandidatosContratados : candidatosContratados.entrySet()) {
-			Cancion cancion = entradasCandidatosContratados.getKey();
-			HashMap<Rol, Set<ArtistaContratado>> mapaArtistaRolC = entradasCandidatosContratados.getValue();
-			for(Map.Entry<Rol, Set<ArtistaContratado>> entradasArtistaRolC : mapaArtistaRolC.entrySet()) {
-				Set<ArtistaContratado> artistasRolC = entradasArtistaRolC.getValue(); 
-				Rol rolContratado = entradasArtistaRolC.getKey();
-				for(ArtistaContratado r : artistasRolC) {
-					if(r.esRolEntrenado(rolContratado)) {
-						HashMap<Rol, Set<ArtistaContratado>> cPorRol = 
-								candsContratadosRolEntrenado.computeIfAbsent(cancion, k -> new HashMap<>());
-						Set<ArtistaContratado> setArtistaC = cPorRol.computeIfAbsent(rolContratado, k -> new HashSet<>());
-						
-						setArtistaC.add(r);				
-					}else {
-						HashMap<Rol, Set<ArtistaContratado>> cPorRol = 
-								candsContratadosRolNoEntrenado.computeIfAbsent(cancion, k -> new HashMap<>());
-						Set<ArtistaContratado> setArtistaC = cPorRol.computeIfAbsent(rolContratado, k -> new HashSet<>());
-						
-						setArtistaC.add(r);
-					}
-				}
-			}
-		}
-		
-		HashMap<Cancion, HashMap<Rol, Set<ArtistaContratado>>> contNEC = new HashMap<>();
-		HashMap<Cancion, HashMap<Rol, Set<ArtistaContratado>>> contNENC = new HashMap<>();
-		
-		HashMap<Cancion, HashMap<Rol, Set<ArtistaContratado>>> contEC = new HashMap<>();
-		HashMap<Cancion, HashMap<Rol, Set<ArtistaContratado>>> contENC = new HashMap<>();
-		
-		seperarCompartenBandas(artistasBaseCandidatos, contEC, contENC, candsContratadosRolEntrenado);
-		seperarCompartenBandas(artistasBaseCandidatos, contNEC, contNENC, candsContratadosRolNoEntrenado);
-		
-		
-		
-		/* candidatosBase --> Artistas base que son candidatos (0)
-		 * contNEC 	---> Artistas contratados con roles entrenados que comparten banda (0,50)
-		 * conEC ---> Artistas contratados con roles entrenados y que comparten banda (0,75) 
-		 * contNENC ---> Artistas contratados con roles no entrenados que no comparten banda (1)
-		 * constENC ---> Artistas contratados con roles entrenados que no comparten banda (1,5)
-		 * */
+		}	
 	}
 	
-	// <? extends Artista> signfica un tipo cualquiera que extienda de artista
-	private <T extends Artista>  void generarCandidatosPorRol(
-			ArrayList<T> artistas, 
-			HashMap<Cancion, HashMap<Rol, Set<T>>> candidatos) {
-		if(artistas.size() == 0) return;
+	private Set<Artista> asingarArtistasPorRol(
+			Rol rol, 
+			Set<Artista> base, 
+			Set<ArtistaContratado> contratados, 
+			HashMap<Rol, Set<Artista>> asignaciones,
+			Cancion cancion) {
+		int cantidadRequeridaParaRol = cancion.getRolesRequeridos().get(rol);
+		Set<Artista> elegidos = new HashSet<>();
 		
-		for(Cancion c : this.listaCanciones) {
-			Set<Rol> rolesFaltantes = c.rolesFaltantes().keySet();
-			for(T a : artistas) {
-				for(Rol r : rolesFaltantes) {
-					if(a.poseeRol(r)) {
-						HashMap<Rol, Set<T>> porRol =
-		                        candidatos.computeIfAbsent(c, k -> new HashMap<>());
-						Set<T> setArtistas = porRol.computeIfAbsent(r, k -> new HashSet<>());
-						setArtistas.add(a);
-					}
-				}
+		for(int i = 0; i < cantidadRequeridaParaRol; i++) {
+			Artista elegido = elegirArtista(rol, base, contratados, asignaciones, elegidos);
+			if(elegido == null) {
+				throw new IllegalStateException("Rol no cubierto: " + rol.getNombre());
 			}
+			elegidos.add(elegido);
 		}
+		
+		return elegidos;
 	}
 	
-	
-	private void seperarCompartenBandas(
-			Set<Artista> artistasBaseCandidatos, 
-			HashMap<Cancion, HashMap<Rol, Set<ArtistaContratado>>> comparte, 
-			HashMap<Cancion, HashMap<Rol, Set<ArtistaContratado>>> noComparte,
-			HashMap<Cancion, HashMap<Rol, Set<ArtistaContratado>>> fuente
-			) {
-		for(Map.Entry<Cancion, HashMap<Rol, Set<ArtistaContratado>>> entradasRE : fuente.entrySet()) {
-			Cancion cancion = entradasRE.getKey();
-			HashMap<Rol, Set<ArtistaContratado>> mapaArtRolE = entradasRE.getValue();
-			for(Map.Entry<Rol, Set<ArtistaContratado>> entradaArtE : mapaArtRolE.entrySet()) {
-				Set<ArtistaContratado> setArtCont = entradaArtE.getValue();
-				Rol rol = entradaArtE.getKey();
-				for(ArtistaContratado ac : setArtCont) {
-					for(Artista ab : artistasBaseCandidatos) {
-						if(ac.comparteBanda(ab)) {
-							HashMap<Rol, Set<ArtistaContratado>> cPorRol = 
-									comparte.computeIfAbsent(cancion, k -> new HashMap<>());
-							Set<ArtistaContratado> setArtistaC = cPorRol.computeIfAbsent(rol, k -> new HashSet<>());
-							setArtistaC.add(ac);
-						}else {
-							HashMap<Rol, Set<ArtistaContratado>> cPorRol = 
-									noComparte.computeIfAbsent(cancion, k -> new HashMap<>());
-							Set<ArtistaContratado> setArtistaC = cPorRol.computeIfAbsent(rol, k -> new HashSet<>());
-							setArtistaC.add(ac);
-						}
-						
-					}
-				}
+	private Artista elegirArtista(
+			Rol rol, 
+			Set<Artista> base, 
+			Set<ArtistaContratado> contratados, 
+			HashMap<Rol, Set<Artista>> asignaciones,
+			Set<Artista> elegidos) {
+		Set<Artista> yaElegidos = new HashSet<>();
+		for (Set<Artista> artistas : asignaciones.values()) {
+			yaElegidos.addAll(artistas);
+		}
+		yaElegidos.addAll(elegidos);
+		
+		for(Artista ab : base) {
+			if(!yaElegidos.contains(ab) && ab.poseeRol(rol)) {
+				return ab;
 			}
 		}
+		
+		ArtistaContratado mejor = null;
+		double mejorCosto = Double.MAX_VALUE;
+		
+		for(ArtistaContratado ac : contratados) {
+			if(yaElegidos.contains(ac) || !ac.poseeRol(rol)) continue;
+			
+			int cantActual = contadorCanciones.getOrDefault(ac, 0);
+			if(cantActual >= ac.getCantCancionesMaxRecital()) continue;
+			
+			double costo = ac.calcularCosto(new ArrayList<>(this.artistasBaseContratados), rol);
+			
+			if(costo < mejorCosto) {
+				mejor = ac;
+				mejorCosto = costo;
+			}
+		}
+		
+		return mejor;		
 	}
-	
 	
 	public void agregarCancion(Cancion cancion) {
 		this.listaCanciones.add(cancion);
@@ -211,11 +194,15 @@ public class Recital {
 	
 	public double cotizarRecital(ArrayList<Artista> artistasBase) {
 		HashMap<Rol, Integer> rolesFaltantes = this.obtenerRolesFaltantes();
-		if(rolesFaltantes == null || !rolesFaltantes.isEmpty()) {
-			return -1;
+		if(rolesFaltantes == null) {
+			throw new IllegalArgumentException("Los roles falntantes no pueden ser null.");
+		}
+		if(!rolesFaltantes.isEmpty()) {
+			throw new IllegalArgumentException("Los roles falntantes no pueden ser null."); 
 		}
 		
 		double costo = 0;
+		
 		for(Cancion c : this.listaCanciones) {
 			costo += c.obtenerCosto(artistasBase);
 		}

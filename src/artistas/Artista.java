@@ -1,19 +1,30 @@
 package artistas;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Set;
 
 public class Artista {
 	//ATRIBUTOS
+	private static int nextId = 1; 
+	private final int id;
 	private String name;
 	private Set<Rol> historicoRoles;
 	private Set<String> historicoBandas;
 
 	//CONSTRUCTOR
-	public Artista(String n, Set<Rol> historicoRoles, Set<String> historicoBandas, int cantMaxCanciones) {
+	public Artista(String n, Set<Rol> historicoRoles, Set<String> historicoBandas) {
+		this.id = nextId++;
 		this.name = n;
-		this.historicoRoles = historicoRoles;
-		this.historicoBandas = historicoBandas;
+		this.historicoRoles = historicoRoles == null ? new HashSet<>() : new HashSet<>(historicoRoles);
+		this.historicoBandas = historicoBandas== null ? new HashSet<>() : new HashSet<>(historicoBandas);
+	}
+	
+	public Artista(String n) {
+		this.id = nextId++;
+		this.name = n;
+		this.historicoRoles = new HashSet<>();
+		this.historicoBandas = new HashSet<>();
 	}
 	
 	// GETTERS
@@ -24,8 +35,7 @@ public class Artista {
 	// METODOS PROPPIOS DE LA CLASE
 	public void agregarBandaAHistorico(String nombreBanda) {
 		if(nombreBanda.length() == 0) { 
-			System.out.println("El nombre de la banda no puede ser vacio");
-			return;
+			throw new IllegalArgumentException("El nombre de la banda no puede ser vacio");
 		}
 		
 		this.historicoBandas.add(nombreBanda);
@@ -33,8 +43,7 @@ public class Artista {
 	
 	public void agregarRolAHistorico(Rol rol) {
 		if(rol == null) { 
-			System.out.println("El rol no puede ser vacio");
-			return;
+			throw new IllegalArgumentException("El rol no puede ser vacio");
 		}
 		
 		this.historicoRoles.add(rol);
@@ -45,4 +54,19 @@ public class Artista {
 	
 	public boolean poseeRol(Rol rol) { return this.historicoRoles.contains(rol); }
 	public double calcularCosto(ArrayList<Artista> artistasBase, Rol rol) {return 0;}
+	
+	@Override
+	public boolean equals(Object o) {
+	    if (this == o) return true;
+	    if (o == null || getClass() != o.getClass()) return false;
+
+	    Artista artista = (Artista) o;
+	    return this.id == artista.id;
+	    		
+	}
+
+	@Override
+	public int hashCode() {
+		return Integer.hashCode(id);
+	}
 }
