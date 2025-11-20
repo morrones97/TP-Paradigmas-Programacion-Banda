@@ -54,7 +54,10 @@ public class Cancion {
 			throw new IllegalArgumentException("Rol no requerido " + rolArtista.getNombre());
 		}
 		
-		int vacantesDisponibles = this.rolesRequeridos.get(rolArtista) - this.artistasAsignados.get(rolArtista).size();
+		int rolesAsignados = this.artistasAsignados.get(rolArtista) == null ? 0 : this.artistasAsignados.get(rolArtista).size();
+		int rolesRequeridos = this.rolesRequeridos.get(rolArtista) == null ? 0 : this.rolesRequeridos.get(rolArtista);
+		
+		int vacantesDisponibles = rolesRequeridos - rolesAsignados;
 		
 		if(vacantesDisponibles < arts.size()) {
 			throw new IllegalArgumentException(
@@ -84,11 +87,14 @@ public class Cancion {
 		HashMap<Rol, Integer> rolesFaltantes = new HashMap<>();
 		
 		for(Map.Entry<Rol, Integer> rolesReq : this.rolesRequeridos.entrySet()) {
-			Set<Artista> aAsignados = this.artistasAsignados.get(rolesReq.getKey());
+			Rol rol = rolesReq.getKey();
+			int cantReq = rolesReq.getValue();
+			Set<Artista> aAsignados = this.artistasAsignados.get(rol);
+			int cantAsignada = aAsignados == null ? 0 : aAsignados.size();
 			if(aAsignados == null || aAsignados.size() != rolesReq.getValue()) {
 				rolesFaltantes.put(
-						rolesReq.getKey(), 
-						rolesReq.getValue() - this.artistasAsignados.get(rolesReq.getKey()).size()
+						rol, 
+						cantReq - cantAsignada
 					);
 			}	
 		}
@@ -102,15 +108,17 @@ public class Cancion {
 			throw new IllegalArgumentException("El rol no puede ser null.");
 		}
 		
-		if(artistas == null || artistas.isEmpty()) {
-			throw new IllegalArgumentException("Los artistas no pueden ser null ni estar vacios.");
+		if(artistas == null) {
+			throw new IllegalArgumentException("Los artistas no pueden ser null.");
 		}
 		
 					
 		validarAsignacionRolArtistas(rol, artistas);	
 		
-		this.artistasAsignados.merge(rol, artistas, (existente, nuevos) -> {
-			existente.addAll(new ArrayList<>(nuevos));
+		Set<Artista> artsAsig = new HashSet<>(artistas);
+		
+		this.artistasAsignados.merge(rol, artsAsig, (existente, nuevos) -> {
+			existente.addAll(nuevos);
 			return existente;
 		});
 
@@ -147,5 +155,12 @@ public class Cancion {
 		
 		
 		return precio;
+	}
+	
+	
+	@Override
+	public String toString() {
+		String cadena = "" + this.titulo;
+		return cadena;
 	}
 }

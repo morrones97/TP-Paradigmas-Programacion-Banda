@@ -1,0 +1,70 @@
+{
+  "artistas": [
+    {
+      "name": "Juan Pérez",
+      "historicoRoles": [
+        "Cantante",
+        "Guitarrista"
+      ],
+      "historicoBandas": [
+        "Los Sonantes"
+      ]
+    },
+    {
+      "name": "María Gómez",
+      "historicoRoles": [
+        "Baterista"
+      ],
+      "historicoBandas": [
+        "Ritmo Urbano"
+      ]
+    },
+    {
+      "name": "Carlos Romero",
+      "historicoRoles": [
+        "Tecladista",
+        "Productor"
+      ],
+      "historicoBandas": [],
+      "artistaContratado": {
+        "rolesEntrenados": [
+          "Tecladista"
+        ],
+        "costoPorCancion": 25000,
+        "cantCancionesMaxRecital": 4
+      }
+    },
+    {
+      "name": "Luciana Torres",
+      "historicoRoles": [
+        "Cantante"
+      ],
+      "historicoBandas": [
+        "Voces del Alba"
+      ],
+      "artistaContratado": {
+        "rolesEntrenados": [
+          "Cantante"
+        ],
+        "costoPorCancion": 30000,
+        "cantCancionesMaxRecital": 5
+      }
+    },
+    {
+      "name": "Diego Rivas",
+      "historicoRoles": [
+        "Guitarrista"
+      ],
+      "historicoBandas": [
+        "Electro Rock"
+      ],
+      "artistaContratado": {
+        "rolesEntrenados": [
+          "Guitarrista"
+        ],
+        "costoPorCancion": 20000,
+        "cantCancionesMaxRecital": 6
+      }
+    }
+  ]
+}

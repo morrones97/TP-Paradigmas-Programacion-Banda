@@ -33,6 +33,12 @@ public class Recital {
 
 	public String getBanda() { return banda; }
 	
+	public Set<Cancion> getCanciones() { return this.listaCanciones; }
+	
+	public HashMap<Cancion, HashMap<Rol, Set<Artista>>> getAsignacionesRecital() {
+		return this.asignacionesRecital;
+	}
+	
 	public Set<Artista> listarArtistas() {
 		
 		Set<Artista> artistasRecital = new HashSet<>();
@@ -54,40 +60,6 @@ public class Recital {
 		return artistasRecital;
 	}
 	
-	public void contratarPorCancion(
-			Cancion cancion,
-			Set<Artista> artistasBase,
-			Set<ArtistaContratado> artistasContratados) {
-		if(!this.listaCanciones.contains(cancion)) {
-			return;
-		}
-		
-		HashMap<Rol, Set<Artista>> asignacion = new HashMap<>();
-		Set<Rol> rolesRequeridos = cancion.rolesFaltantes().keySet();
-		for(Rol rol : rolesRequeridos) {			
-			Set<Artista> asignadosPorRol = asingarArtistasPorRol(rol, artistasBase, artistasContratados, asignacion, cancion);
-			if(asignadosPorRol != null && !asignadosPorRol.isEmpty()) {
-				asignacion.put(rol, asignadosPorRol);
-				for(Artista a : asignadosPorRol) {
-					if(artistasContratados.contains(a)) {
-						ArtistaContratado ac = (ArtistaContratado) a;
-						this.contadorCanciones.merge(ac, 1, Integer::sum);
-					}
-				}
-				
-			}
-			cancion.asignarArtista(rol, asignadosPorRol);
-		}
-		
-	    HashMap<Rol, Set<Artista>> asignacionesCancion =
-	            asignacionesRecital.getOrDefault(cancion, new HashMap<>());
-	    
-	    asignacionesCancion.putAll(asignacion);
-
-	    asignacionesRecital.put(cancion, asignacionesCancion);
-	    
-	}
-	
 	public void contratarTodasCanciones(
 			Set<Artista> artistasBase,
 			Set<ArtistaContratado> artistasContratados
@@ -96,7 +68,8 @@ public class Recital {
 			boolean cancionConAsignaciones = 
 					this.asignacionesRecital.containsKey(cancion) &&
 					this.asignacionesRecital.get(cancion) != null &&
-					!this.asignacionesRecital.get(cancion).isEmpty();
+					cancion.rolesFaltantes() != null &&
+					cancion.rolesFaltantes().size() == 0;
 			
 			if(!cancionConAsignaciones) {
 				contratarPorCancion(cancion, artistasBase, artistasContratados);
@@ -104,23 +77,54 @@ public class Recital {
 		}	
 	}
 	
+	public void contratarPorCancion(
+			Cancion cancion,
+			Set<Artista> artistasBase,
+			Set<ArtistaContratado> artistasContratados) {
+		if(!this.listaCanciones.contains(cancion)) {
+			return;
+		}
+		
+		HashMap<Rol, Set<Artista>> asignacionNueva = new HashMap<>();
+		Set<Rol> rolesRequeridos = cancion.rolesFaltantes().keySet();
+		for(Rol rol : rolesRequeridos) {			
+			Set<Artista> asignadosPorRol = asingarArtistasPorRol(rol, artistasBase, artistasContratados, asignacionNueva, cancion);
+			if(asignadosPorRol != null && !asignadosPorRol.isEmpty()) {
+				asignacionNueva.put(rol, asignadosPorRol);
+				for(Artista a : asignadosPorRol) {
+					if(artistasContratados != null && artistasContratados.contains(a)) {
+						ArtistaContratado ac = (ArtistaContratado) a;
+						this.contadorCanciones.merge(ac, 1, Integer::sum);
+					}
+				}
+				
+				cancion.asignarArtista(rol, asignadosPorRol);
+			}
+		}
+		
+	    HashMap<Rol, Set<Artista>> asignacionesCancion =
+	            asignacionesRecital.getOrDefault(cancion, new HashMap<>());
+	    
+	    asignacionesCancion.putAll(asignacionNueva);
+
+	    asignacionesRecital.put(cancion, asignacionesCancion);
+	    
+	}
+	
 	private Set<Artista> asingarArtistasPorRol(
 			Rol rol, 
 			Set<Artista> base, 
 			Set<ArtistaContratado> contratados, 
-			HashMap<Rol, Set<Artista>> asignaciones,
+			HashMap<Rol, Set<Artista>> asignacionNueva,
 			Cancion cancion) {
 		int cantidadRequeridaParaRol = cancion.getRolesRequeridos().get(rol);
 		Set<Artista> elegidos = new HashSet<>();
-		
 		for(int i = 0; i < cantidadRequeridaParaRol; i++) {
-			Artista elegido = elegirArtista(rol, base, contratados, asignaciones, elegidos);
-			if(elegido == null) {
-				throw new IllegalStateException("Rol no cubierto: " + rol.getNombre());
+			Artista elegido = elegirArtista(rol, base, contratados, cancion.getArtistasAsignados(), elegidos);
+			if(elegido != null) {
+				elegidos.add(elegido);
 			}
-			elegidos.add(elegido);
-		}
-		
+		}		
 		return elegidos;
 	}
 	
@@ -128,23 +132,27 @@ public class Recital {
 			Rol rol, 
 			Set<Artista> base, 
 			Set<ArtistaContratado> contratados, 
-			HashMap<Rol, Set<Artista>> asignaciones,
+			HashMap<Rol, Set<Artista>> asignacionesHechas,
 			Set<Artista> elegidos) {
-		Set<Artista> yaElegidos = new HashSet<>();
-		for (Set<Artista> artistas : asignaciones.values()) {
-			yaElegidos.addAll(artistas);
-		}
-		yaElegidos.addAll(elegidos);
 		
+		Set<Artista> yaElegidos = new HashSet<>();
+		for(Map.Entry<Rol, Set<Artista>> ent : asignacionesHechas.entrySet()) {
+			for(Artista a : ent.getValue()) {
+				yaElegidos.add(a);
+			}
+		}				
+		yaElegidos.addAll(elegidos);
+				
 		for(Artista ab : base) {
 			if(!yaElegidos.contains(ab) && ab.poseeRol(rol)) {
 				return ab;
 			}
 		}
+			
+		if(contratados == null) return null;
 		
 		ArtistaContratado mejor = null;
 		double mejorCosto = Double.MAX_VALUE;
-		
 		for(ArtistaContratado ac : contratados) {
 			if(yaElegidos.contains(ac) || !ac.poseeRol(rol)) continue;
 			
@@ -209,5 +217,8 @@ public class Recital {
 		
 		return costo;
 	}
+	
+	
+
 	
 }

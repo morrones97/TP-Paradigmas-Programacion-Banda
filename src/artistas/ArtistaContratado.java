@@ -24,10 +24,14 @@ public class ArtistaContratado extends Artista implements Comparable<ArtistaCont
 	public boolean esRolEntrenado(Rol rol) {
 		return this.rolesEntrenados.contains(rol);
 	}
-	
+
 	public void entrenarRol(Rol rol) {
+		if(rol == null) {
+			throw new IllegalArgumentException("El rol no puede ser nulo");
+		}
+		
 		if(this.getHistoricoRoles().contains(rol) || this.rolesEntrenados.contains(rol)) {
-			throw new IllegalArgumentException("Ya posee el rol: " + rol.getNombre());
+			return;
 		}
 		
 		this.rolesEntrenados.add(rol); 

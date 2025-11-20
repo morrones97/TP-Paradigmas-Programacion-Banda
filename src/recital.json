@@ -1,0 +1,28 @@
+{
+  "titulo": "Noche de Rock 2025",
+  "banda": "Los Sonantes",
+  "canciones": [
+    {
+      "titulo": "Amanecer Eléctrico",
+      "rolesRequeridos": {
+        "Cantante": 1,
+        "Guitarrista": 1,
+        "Baterista": 1
+      }
+    },
+    {
+      "titulo": "Río de Fuego",
+      "rolesRequeridos": {
+        "Cantante": 1,
+        "Tecladista": 1
+      }
+    },
+    {
+      "titulo": "Luz en la Tormenta",
+      "rolesRequeridos": {
+        "Guitarrista": 2,
+        "Baterista": 1
+      }
+    }
+  ]
+}

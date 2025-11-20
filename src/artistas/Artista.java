@@ -69,4 +69,11 @@ public class Artista {
 	public int hashCode() {
 		return Integer.hashCode(id);
 	}
+	
+	@Override 
+	public String toString() {
+		String cad = "";
+		cad += this.name;
+		return cad;
+	}
 }
