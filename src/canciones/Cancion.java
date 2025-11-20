@@ -163,4 +163,20 @@ public class Cancion {
 		String cadena = "" + this.titulo;
 		return cadena;
 	}
+	
+	@Override
+	public int hashCode() {
+	    int result = titulo.toLowerCase().hashCode();
+	    result = 31 * result + rolesRequeridos.hashCode();
+	    return result;
+	}
+	
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Cancion cancion = (Cancion) o;
+        return titulo.equalsIgnoreCase(cancion.getTitulo()) && 
+        		rolesRequeridos.equals(cancion.getRolesRequeridos());
+    }
 }

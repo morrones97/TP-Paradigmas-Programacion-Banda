@@ -16,11 +16,9 @@ public class App {
 		Set<Artista> artistasBase = new HashSet<>();
     	Set<ArtistaContratado> artistasContratados = new HashSet<>();
         Set<Rol> roles = new HashSet<>();
-        Recital recital = null;
-        
+        Recital recital = LectorJSON.leerArchivoRecital("recital.json");
         LectorJSON.leerArchivoArtistas("artistas.json", artistasBase, artistasContratados, roles);
-		LectorJSON.leerArchivoRecital("recital.json", recital);
-	
+   	
 		Menu menuOpc = new Menu();	
 		menuOpc.mostrarOpciones(recital, artistasBase, artistasContratados, roles);
 		
